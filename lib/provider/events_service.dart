@@ -1,44 +1,49 @@
 import 'dart:collection';
 import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 import 'package:proyecto2ev/models/event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 //import 'package:http/http.dart' as http;
 
 class EventsService extends ChangeNotifier {
-  Future isFavorite() async{
-    
+  List<Event> events = [];   
+
+  EventsService() {
+    loadEvents();
   }
 
-  /*EventsService() {
-    loadTasks();
-  }*/
+  Future <List<Event>> loadEvents() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? jsonString = prefs.getString('eventos');
 
-  //List<Event> tasks = [];   
+    if (jsonString != null && jsonString.isNotEmpty) {
+    List jsonList = jsonDecode(jsonString);
+    List<Event> events = [];
 
-  /*Future <void> loadTasks() async {
-    try {
-      final uri = Uri.parse('http://localhost:3000/tasks');
+    for (var item in jsonList) {
+      Event event = Event.fromJson(item);
+      events.add(event);
+    }
 
-      final response = await http.get(uri).timeout(const Duration(seconds: 3));
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final List jsonList = jsonDecode(response.body);
-
-        tasks = [];
-        for (var item in jsonList) {
-          Task task = Task.fromJson(item);
-          tasks.add(task);
-        }
-      } else {
-        debugPrint('Error: ${response.statusCode}');
-      }
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error: $e');
+    return events;
+    } else {
+      return [];
     }
   }
 
+  Future pickImage() async {
+    final XFile? image;
+    try {
+      image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      return image;
+    } on PlatformException catch (e) {
+      print('Failed to pick image:$e');
+    }
+  }
+
+/*
   Future <void> createTask(Task task) async {
     try {
       final uri = Uri.parse('http://localhost:3000/tasks');
