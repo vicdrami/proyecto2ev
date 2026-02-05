@@ -12,6 +12,7 @@ dependencies:
   image_picker: ^1.2.1
   provider: ^6.1.5+1
   shared_preferences: ^2.5.4
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
@@ -20,3 +21,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - server/db.json

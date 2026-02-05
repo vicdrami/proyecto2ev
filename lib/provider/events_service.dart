@@ -5,7 +5,7 @@ import 'package:proyecto2ev/models/event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-//import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as http;
 
 class EventsService extends ChangeNotifier {
   List<Event> events = [];   
@@ -14,29 +14,47 @@ class EventsService extends ChangeNotifier {
     loadEvents();
   }
 
-  Future <List<Event>> loadEvents() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? jsonString = prefs.getString('eventos');
+  Future <void> loadEvents() async {
+    events = [];
 
-    if (jsonString != null && jsonString.isNotEmpty) {
-    List jsonList = jsonDecode(jsonString);
-    List<Event> events = [];
+    final prefs = await SharedPreferences.getInstance();
+      final localJson = prefs.getString('eventos');
 
-    for (var item in jsonList) {
-      Event event = Event.fromJson(item);
-      events.add(event);
-    }
+      if (localJson != null && localJson.isNotEmpty) {
+        final Map<String, dynamic> decoded = jsonDecode(localJson);
+        final List<dynamic> localList = decoded['eventos'];
+        events.addAll(localList.map((e) => Event.fromJson(e)));
 
-    return events;
+        for (var item in localList) {
+          events.add(Event.fromJson(item));
+        }
+      }
+
+
+    final uri = Uri.parse('http://localhost:3000/events');
+    final response = await http.get(uri).timeout(const Duration(seconds: 3));
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final Map<String, dynamic> decoded = jsonDecode(response.body);
+      final List<dynamic> jsonList = decoded['eventos'];
+
+      for (var item in jsonList) {
+        Event event = Event.fromJson(item);
+        events.add(event);
+      }
     } else {
-      return [];
+      debugPrint('Error: ${response.statusCode}');
+      events = [];
     }
+
+    notifyListeners();
   }
 
   Future pickImage() async {
     final XFile? image;
     try {
       image = await ImagePicker().pickImage(source: ImageSource.gallery);
+
       return image;
     } on PlatformException catch (e) {
       print('Failed to pick image:$e');

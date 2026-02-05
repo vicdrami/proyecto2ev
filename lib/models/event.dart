@@ -1,36 +1,36 @@
 class Event {
   final String id;
   final String title;
-  final String description;
+  final String image;
   final DateTime date;
+  final String description;
   final double price;
-  final String imageUrl;
 
   Event({
     required this.id,
     required this.title,
-    required this.description,
+    required this.image,
     required this.date,
+    required this.description,
     required this.price,
-    required this.imageUrl,
   });
 
   Event.fromJson(Map<String, dynamic> json)
   : id = json['id'] as String,
     title = json['title'] as String,
+    image = json['image'] as String,
+    date =  DateTime.parse(json['date'] as String),
     description = json['description'] as String,
-    date = json['date'] as DateTime,
-    price = json['price'] as double,
-    imageUrl = json['imageUrl'] as String;
+    price = (json['price'] as num).toDouble();
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'title': title,
-      'description': description,
+      'image': image,
       'date': date.toIso8601String(),
+      'description': description,
       'price': price,
-      'imageUrl': imageUrl,
     };
   }
 }
