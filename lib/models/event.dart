@@ -5,6 +5,7 @@ class Event {
   final DateTime date;
   final String description;
   final double price;
+  bool isFavorite;
 
   Event({
     required this.id,
@@ -13,6 +14,7 @@ class Event {
     required this.date,
     required this.description,
     required this.price,
+    this.isFavorite = false,
   });
 
   Event.fromJson(Map<String, dynamic> json)
@@ -21,7 +23,8 @@ class Event {
     image = json['image'] as String,
     date =  DateTime.parse(json['date'] as String),
     description = json['description'] as String,
-    price = (json['price'] as num).toDouble();
+    price = (json['price'] as num).toDouble(),
+    isFavorite = false;
 
   Map<String, dynamic> toJson() {
     return {
