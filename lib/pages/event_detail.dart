@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:proyecto2ev/provider/events_service.dart';
 import 'package:proyecto2ev/provider/selected_event_notifier.dart';
 import 'package:proyecto2ev/pages/event_edit.dart';
+import 'dart:io';
+
 
 class EventDetail extends StatefulWidget {
   const EventDetail(
@@ -99,7 +101,25 @@ class _EventDetailState extends State<EventDetail> {
                     style: const TextStyle(fontSize: 20),
                   ),
                   const SizedBox(height: 20),
-                  //ImageLoader(event: event!, size: 300),
+                  event!.image.isNotEmpty
+                    ? (event!.image.startsWith('http')
+                      ? Image.network(
+                          event!.image,
+                          fit: BoxFit.cover,
+                          width: 200,
+                          height: 200,
+                        )
+                    : Image.file(
+                        File(event!.image),
+                        fit: BoxFit.cover,
+                        width: 200,
+                        height: 200,
+                      ))
+                    : const Icon(
+                      Icons.image_outlined,
+                      size: 200,
+                      color: Colors.grey,
+                    ),
                 ],
               ),
             ),

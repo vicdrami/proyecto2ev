@@ -36,17 +36,18 @@ class EventsService extends ChangeNotifier {
     List<Event> loadedEvents = []; 
 
     /* Lista los eventos desde el almacenamiento local */
-      final prefs = await SharedPreferences.getInstance();
+      /*final prefs = await SharedPreferences.getInstance();
 
       final localJson = prefs.getString('eventos');
 
       if (localJson != null && localJson.isNotEmpty) {
-        final List<dynamic> localList = jsonDecode(localJson);
+        final Map<String, dynamic> localMap = jsonDecode(localJson);
+        final List<dynamic> localList = localMap['eventos'];
 
         for (var item in localList) {
           loadedEvents.add(Event.fromJson(item));
         }
-      }
+      }*/
 
     /* Lista los eventos desde el servidor (archivo JSON) */
       final uri = Uri.parse('http://localhost:3000/eventos');
@@ -54,13 +55,13 @@ class EventsService extends ChangeNotifier {
       final response = await http.get(uri).timeout(const Duration(seconds: 3));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final List<dynamic> jsonList = jsonDecode(response.body);
+        List jsonList = jsonDecode(response.body);
 
         for (var item in jsonList) {
           Event event = Event.fromJson(item);
 
           // Evitamos duplicados (si ya existe en local, no lo añadimos)
-          if (!events.any((e) => e.id == event.id)) {
+          if (!loadedEvents.any((e) => e.id == event.id)) {
             loadedEvents.add(event);
           }
         }
@@ -84,7 +85,7 @@ class EventsService extends ChangeNotifier {
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final createdEvent = Event.fromJson(jsonDecode(response.body));
+        final createdEvent = Event.fromJson(jsonDecode(response.body)['eventos'][0]);
 
         // Añadimos el evento nuevo si no existe
         if (!events.any((e) => e.id == createdEvent.id)) {
@@ -137,7 +138,7 @@ class EventsService extends ChangeNotifier {
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final json = jsonDecode(response.body);
+        final json = jsonDecode(response.body)['eventos'];
         final modifiedEvent = Event.fromJson(json);
 
         // Actualizamos el evento modificado en la lista local
@@ -243,5 +244,7 @@ class EventsService extends ChangeNotifier {
       filteredEvents.sort((a, b) => a.price.compareTo(b.price));
       if (!sortPriceAsc!) filteredEvents = filteredEvents.reversed.toList();
     }
+
+    notifyListeners();
   }
 }

@@ -52,16 +52,6 @@ class _EventsState extends State<Events> {
   Widget build(BuildContext context) {
     final service = context.watch<EventsService>();
 
- /* Lista filtrada y ordenada según las opciones marcadas*/
-    List<Event> filtered = service.events.where((event) {
-      if (showOnlyFavorites && !event.isFavorite) return false;
-      if (!showPastEvents && event.date.isBefore(DateTime.now())) return false;
-      return true;
-    }).toList();
-    if (sortByDate) filtered.sort((a, b) => a.date.compareTo(b.date));
-    if (sortByPrice) filtered.sort((a, b) => a.price.compareTo(b.price));
-
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Listado de eventos'),
@@ -147,48 +137,64 @@ class _EventsState extends State<Events> {
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
         ),
-        itemCount: filtered.length,
+        itemCount: service.filteredEvents.length,
         itemBuilder: (context, index) {
-          final Event event = filtered[index];
-          return Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(event.title),
-                Text(event.description),
-                Text(event.date.toString()),
-                Text(event.price.toString()),
-                event.image.isNotEmpty
-                  ? (event.image.startsWith('http')
-                    ? Image.network(
-                        event.image,
+          final Event event = service.filteredEvents[index];
+          return InkWell(
+            onTap: () {
+              // Al pulsar, abrimos la pantalla de detalle del evento
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EventDetail(
+                    event: event,
+                    closeCallback: () {
+                      service.loadEvents();
+                    },
+                  ),
+                ),
+              );
+            },
+            child:  Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(event.title),
+                  Text(event.description),
+                  Text(event.date.toString()),
+                  Text(event.price.toString()),
+                  event.image.isNotEmpty
+                    ? (event.image.startsWith('http')
+                      ? Image.network(
+                          event.image,
+                          fit: BoxFit.cover,
+                          width: 200,
+                          height: 200,
+                        )
+                    : Image.file(
+                        File(event.image),
                         fit: BoxFit.cover,
                         width: 200,
                         height: 200,
-                      )
-                  : Image.file(
-                      File(event.image),
-                      fit: BoxFit.cover,
-                      width: 200,
-                      height: 200,
-                    ))
-                  : const Icon(
-                    Icons.image_outlined,
-                    size: 200,
-                    color: Colors.grey,
-                  ),
-                IconButton(
-                  icon: Icon(
-                    event.isFavorite ? Icons.star : Icons.star_border,
-                    color: event.isFavorite ? Colors.amber : null,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      service.markFavorite(event);
-                    });
-                  },
-                ), 
-              ],
+                      ))
+                    : const Icon(
+                      Icons.image_outlined,
+                      size: 200,
+                      color: Colors.grey,
+                    ),
+                  IconButton(
+                    icon: Icon(
+                      event.isFavorite ? Icons.star : Icons.star_border,
+                      color: event.isFavorite ? Colors.amber : null,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        service.markFavorite(event);
+                      });
+                    },
+                  ), 
+                ],
+              ),
             ),
           );
         }
