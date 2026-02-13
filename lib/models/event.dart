@@ -1,5 +1,5 @@
 class Event {
-  final String id;
+  final String? id;
   final String title;
   final String image;
   final DateTime date;
@@ -8,7 +8,7 @@ class Event {
   bool isFavorite;
 
   Event({
-    required this.id,
+    this.id,
     required this.title,
     required this.image,
     required this.date,
@@ -27,13 +27,23 @@ class Event {
     isFavorite = false;
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    if (id == null ) {
+      return {
       'title': title,
       'image': image,
       'date': date.toIso8601String(),
       'description': description,
       'price': price,
     };
+    } else {
+      return {
+        'id': id,
+        'title': title,
+        'image': image,
+        'date': date.toIso8601String(),
+        'description': description,
+        'price': price,
+      };     
+    }
   }
 }

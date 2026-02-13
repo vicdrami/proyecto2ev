@@ -71,18 +71,15 @@ class _EventEditState extends State<EventEdit> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
+                  icon: Icon(Icons.title),
                   labelText: "Título",
-                  border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Introduzca un título";
                   }
-                  if (value.length < 5) {
-                    return "El título debe tener al menos 5 caracteres";
-                  }
-                  if (value.length > 50) {
-                    return "Eltítulo no puede pasar de 50 caracteres";
+                  if (value.length < 5 || value.length > 50) {
+                    return 'El título debe tener entre 5 y 50 caracteres';
                   }
                   return null;
                 },
@@ -91,57 +88,51 @@ class _EventEditState extends State<EventEdit> {
                 controller: _descriptionController,
                 maxLines: 3,
                 decoration: const InputDecoration(
+                  icon: Icon(Icons.description),
                   labelText: "Descripción",
-                  icon: Icon(Icons.description_outlined),
                 ),
                 validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    if (value.length < 5) {
-                      return "La descripción debe tener al menos 5 caracteres";
-                    }
-                    if (value.length > 255) {
-                      return "'La descripción no puede pasar de 255 caracteres";
-                    }
+                  if (value != null &&
+                      value.isNotEmpty &&
+                      (value.length < 5 || value.length > 255)) {
+                      return 'La descripción debe de tener entre 5 y 255 caracteres';
                   }
                   return null;
                 },
               ),
               TextFormField(
                 controller: _priceController,
-                 keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "Precio",
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Introduzca un precio";
-                    }
-
-                    final number = double.tryParse(value);
-                    if (number == null) {
-                      return "Introduzca un valor numérico";
-                    }
-                    if (number < 0) {
-                      return "Introduzca un valor mayor que 0";
-                    }
-                    return null;
-                  },
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  icon: Icon(Icons.attach_money),
+                  labelText: "Precio",
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Introduzca un precio';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Introduzca un valor numérico';
+                  }
+                  if (double.tryParse(value)! < 0) {
+                    return 'Introduzca un valor numérico';
+                  }
+                  return null;
+                },
               ),
               TextFormField(
                 controller: _dateController,
                 readOnly: true,
                 decoration: const InputDecoration(
-                  labelText: "Fecha",
                   icon: Icon(Icons.calendar_today),
+                  labelText: "Fecha",
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return "La fecha es obligatoria";
+                    return "Introduzca una fecha";
                   }
-                  DateTime selectedDate = DateTime.parse(value);
-                  if (selectedDate.isBefore(
-                      DateTime.now().subtract(const Duration(days: 1)))) {
+                  if ( DateTime.parse(value).isBefore(
+                       DateTime.now().subtract(const Duration(days: 1)))) {
                     return "La fecha debe ser hoy o posterior";
                   }
                   return null;
@@ -202,7 +193,6 @@ class _EventEditState extends State<EventEdit> {
                       );
                       eventsNotifier
                           .modifyEvent(Event(
-                              id: event.id,
                               title: _titleController.text,
                               description: _descriptionController.text,
                               price: double.tryParse(_priceController.text)!,
@@ -215,8 +205,8 @@ class _EventEditState extends State<EventEdit> {
                                     .read<SelectedEventNotifier>()
                                     .selectedEvent = value!,
                                 context
-                                    .read<SelectedEventNotifier>()
-                                    .updateEvents(),
+                                    .read<EventsService>()
+                                    .loadEvents(),
                                 Navigator.pop(context, value)
                           });
                     } else {
@@ -242,7 +232,7 @@ class _EventEditState extends State<EventEdit> {
       image = await ImagePicker().pickImage(source: ImageSource.gallery);
       return image;
     } on PlatformException catch (e) {
-      debugPrint('Failed to pick image: $e');
+      debugPrint('Error seleccionando imagen: $e');
     }
   }
 
@@ -274,18 +264,17 @@ class _EventEditState extends State<EventEdit> {
               },
             ),
             TextButton(
+              child: const Text("Cancelar"),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
               child: const Text("Descartar"),
               onPressed: () {
                 // Cerramos el diálogo y volvemos a la página anterior sin guardar los cambios
                   Navigator.pop(context);
                   Navigator.pop(context);
-              },
-            ),
-
-            TextButton(
-              child: const Text("Cancelar"),
-              onPressed: () {
-                Navigator.pop(context);
               },
             ),
           ],
@@ -294,16 +283,24 @@ class _EventEditState extends State<EventEdit> {
     );
   }
 
-  /*void _saveChanges() {
-    event.title = _titleController.text;
-    event.description = _descriptionController.text;
-    event.price = double.parse(_priceController.text);
-    event.date = DateTime.parse(_dateController.text);
-    event.image = _imageUrlController.text;
-
-    eventsNotifier.modifyEvent(event);
-    context.read<SelectedEventNotifier>().selectedEvent = event;
+  void saveChanges() {
+    // Creamos un nuevo evento con los datos modificados
+    final updatedEvent = Event(
+      title: _titleController.text,
+      description: _descriptionController.text,
+      price: double.parse(_priceController.text),
+      date: DateTime.parse(_dateController.text),
+      image: _imageController.text,
+      isFavorite: event.isFavorite,
+    );
 
     _hasChanges = false;
-  }*/
+
+    // Actualizamos el evento en el servicio y en el notifier
+    eventsNotifier.modifyEvent(updatedEvent);
+    context.read<SelectedEventNotifier>().selectedEvent = updatedEvent;
+
+    // Volvemos a la página anterior pasando el evento modificado
+    Navigator.pop(context, updatedEvent);
+  }
 }

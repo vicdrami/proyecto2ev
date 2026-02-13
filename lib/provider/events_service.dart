@@ -9,16 +9,33 @@ import 'package:http/http.dart' as http;
 
 class EventsService extends ChangeNotifier {
   List<Event> events = [];   
+  List<Event> filteredEvents = [];
+
+
+  /* Variables de ordenación y filtrado */
+    bool? sortDateAsc;
+    bool? sortPriceAsc;
+    bool showFavoritesOnly = false;
+    bool showPastEvents = true;
 
   EventsService() {
     loadEvents();
   }
 
-  /* Carga los eventos */
-  Future <void> loadEvents() async {
-    events = [];
- 
-    /* Carga los eventos desde el almacenamiento local */
+  /* Carga los eventos desde el servidor y el almacenamiento local */
+  loadEvents() {
+    getEvents().then((value) {
+      events = value;
+      filteredEvents = value;
+      applyFilters();
+    });
+  }
+
+  /* Listar los eventos */
+  Future <List<Event>> getEvents() async {
+    List<Event> loadedEvents = []; 
+
+    /* Lista los eventos desde el almacenamiento local */
       final prefs = await SharedPreferences.getInstance();
 
       final localJson = prefs.getString('eventos');
@@ -27,11 +44,11 @@ class EventsService extends ChangeNotifier {
         final List<dynamic> localList = jsonDecode(localJson);
 
         for (var item in localList) {
-          events.add(Event.fromJson(item));
+          loadedEvents.add(Event.fromJson(item));
         }
       }
 
-    /* Carga los eventos desde el servidor (archivo JSON) */
+    /* Lista los eventos desde el servidor (archivo JSON) */
       final uri = Uri.parse('http://localhost:3000/eventos');
 
       final response = await http.get(uri).timeout(const Duration(seconds: 3));
@@ -42,9 +59,9 @@ class EventsService extends ChangeNotifier {
         for (var item in jsonList) {
           Event event = Event.fromJson(item);
 
-          // Evitamos duplicados: si ya existe en local, no lo añadimos
+          // Evitamos duplicados (si ya existe en local, no lo añadimos)
           if (!events.any((e) => e.id == event.id)) {
-            events.add(event);
+            loadedEvents.add(event);
           }
         }
       } else {
@@ -52,11 +69,11 @@ class EventsService extends ChangeNotifier {
         events = [];
       }
 
-    notifyListeners();
+    return loadedEvents;
   }
 
-  /* Crear evento y cargarlos todos*/
-  Future <void> createEvent(Event event) async {
+  /* Crear evento y cargarlos todos */
+  Future <Event?> createEvent(Event event) async {
     try {
       final uri = Uri.parse('http://localhost:3000/eventos');
 
@@ -67,8 +84,7 @@ class EventsService extends ChangeNotifier {
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final json = jsonDecode(response.body);
-        final createdEvent = Event.fromJson(json);
+        final createdEvent = Event.fromJson(jsonDecode(response.body));
 
         // Añadimos el evento nuevo si no existe
         if (!events.any((e) => e.id == createdEvent.id)) {
@@ -76,32 +92,33 @@ class EventsService extends ChangeNotifier {
         }
 
         await loadEvents();
+        notifyListeners();
+        return createdEvent;
       } else {
         debugPrint('Error: ${response.statusCode}');
       }
-
-      notifyListeners();
     } catch (e) {
       debugPrint('Error: $e');
     }
+    return null;
   }
 
   /* Borrar evento y cargarlos todos*/
   Future <Event?> deleteEvent(Event event) async {
     try {
-      final uri = Uri.parse('http://localhost:3000/eventos/${events.id}');
+      final uri = Uri.parse('http://localhost:3000/eventos/${event.id}');
 
       final response = await http.delete(uri).timeout(const Duration(seconds: 3));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         events.removeWhere((e) => e.id == event.id);
+        await loadEvents();
         notifyListeners();
-        return null;
+        return event;
       } else {
         debugPrint('Error: ${response.statusCode}');
       }
 
-      notifyListeners();
     } catch (e) {
       debugPrint('Error: $e');
     }
@@ -170,4 +187,61 @@ class EventsService extends ChangeNotifier {
     await prefs.setStringList('favorites', favorites);
   }
 
+
+  /// Apartado de filtros
+
+  /* Filtrar solo favoritos */
+  void filterFavorites(bool value) {
+    showFavoritesOnly = value;
+    applyFilters();
+  }
+
+  /* Mostrar/ocultar eventos pasados */
+  void filterPastEvents(bool value) {
+    showPastEvents = value;
+    applyFilters();
+  }
+
+  /* Ordenar por fecha */
+  void sortByDate() {
+    sortDateAsc = sortDateAsc == null ? true : !sortDateAsc!;
+    resetSortDate();
+    applyFilters();
+  }
+
+  /* Ordenar por precio */
+  void sortByPrice() {
+    sortPriceAsc = sortPriceAsc == null ? true : !sortPriceAsc!;
+    resetSortPrice();
+    applyFilters();
+  }
+
+  resetSortDate() => sortDateAsc = null;
+  resetSortPrice() => sortPriceAsc = null;
+
+  /* Aplica los filtros y ordenaciones seleccionados */
+  void applyFilters() {
+    filteredEvents = events.where((event) {
+      // Filtrar por favoritos
+      if (showFavoritesOnly && !event.isFavorite) return false;
+
+      // Filtrar por eventos pasados
+      if (!showPastEvents && event.date.isBefore(DateTime.now())) return false;
+
+      // Si el vento pasa todos los filtros, se incluye en la lista filtrada
+      return true;
+    }).toList();
+
+    // Ordenar por fecha
+    if (sortDateAsc != null) {
+      filteredEvents.sort((a, b) => a.date.compareTo(b.date));
+      if (!sortDateAsc!) filteredEvents = filteredEvents.reversed.toList();
+    }
+
+    // Ordenar por precio
+    if (sortPriceAsc != null) {
+      filteredEvents.sort((a, b) => a.price.compareTo(b.price));
+      if (!sortPriceAsc!) filteredEvents = filteredEvents.reversed.toList();
+    }
+  }
 }

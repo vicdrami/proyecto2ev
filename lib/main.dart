@@ -1,9 +1,10 @@
-import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:proyecto2ev/models/event.dart';
 import 'package:proyecto2ev/provider/events_service.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto2ev/pages/event_detail.dart';
+import 'package:proyecto2ev/pages/event_add.dart';
 
 void main() {
   runApp(
@@ -42,14 +43,24 @@ class _EventsState extends State<Events> {
   List<Event> events = [];
 
   /* Variables de filtrado */ 
-  bool showOnlyFavorites = false;
-  bool showPastEvents = false;
-  bool sortByDate = false;
-  bool sortByPrice = false;
+    bool showOnlyFavorites = false;
+    bool showPastEvents = false;
+    bool sortByDate = false;
+    bool sortByPrice = false;
 
   @override
   Widget build(BuildContext context) {
     final service = context.watch<EventsService>();
+
+ /* Lista filtrada y ordenada según las opciones marcadas*/
+    List<Event> filtered = service.events.where((event) {
+      if (showOnlyFavorites && !event.isFavorite) return false;
+      if (!showPastEvents && event.date.isBefore(DateTime.now())) return false;
+      return true;
+    }).toList();
+    if (sortByDate) filtered.sort((a, b) => a.date.compareTo(b.date));
+    if (sortByPrice) filtered.sort((a, b) => a.price.compareTo(b.price));
+
 
     return Scaffold(
       appBar: AppBar(
@@ -60,12 +71,14 @@ class _EventsState extends State<Events> {
             icon: const Icon(Icons.add),
             tooltip: 'Crear evento',
             onPressed: () {
-              /*Navigator.push(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => CreateEvent(),
-                ),
-              );*/
+                  builder: (_) => const EventAdd(),
+                )
+              ).then((value) => {
+                  service.loadEvents(),
+              });
             },
           ),
         ],
@@ -87,6 +100,7 @@ class _EventsState extends State<Events> {
                         });
                       },
                     ),
+                    const SizedBox(width: 8),
                     /* Filtrar por fecha */
                     ChoiceChip(
                       label: const Text('Fecha'),
@@ -97,6 +111,7 @@ class _EventsState extends State<Events> {
                         });
                       },
                     ),
+                    const SizedBox(width: 8),
                     /* Filtrar por precio */
                     ChoiceChip(
                       label: const Text('Precio'),
@@ -107,6 +122,7 @@ class _EventsState extends State<Events> {
                         });
                       },
                     ),
+                    const SizedBox(width: 8),
                     /* Filtrar por eventos pasados */
                     FilterChip(
                       label: const Text('Eventos pasados'),
@@ -128,10 +144,12 @@ class _EventsState extends State<Events> {
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.75,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
         ),
-        itemCount: service.events.length,
+        itemCount: filtered.length,
         itemBuilder: (context, index) {
-          final Event event = service.events[index];
+          final Event event = filtered[index];
           return Card(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

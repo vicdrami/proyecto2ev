@@ -110,8 +110,12 @@ class _EventDetailState extends State<EventDetail> {
   }
 
   /* Diálogo de confirmación para el borrado*/
-  Future<dynamic> deleteConfirm(BuildContext context, Event event,
-    EventsService service, Function deleteCallback) {
+  Future<dynamic> deleteConfirm(
+    BuildContext context, 
+    Event event,
+    EventsService service, 
+    Function deleteCallback) 
+  {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -125,16 +129,16 @@ class _EventDetailState extends State<EventDetail> {
                 Navigator.of(context).pop();
               },
             ),
-            /*TextButton(
+            TextButton(
               child: const Text('Eliminar'),
               onPressed: () {
-                service.deleteEvent(event.id!).then((value) => {
-                  service.updateEvent(),
+                service.deleteEvent(event).then((value) => {
+                  service.loadEvents(),
                   Navigator.of(context).pop(),
                   deleteCallback(),
                 });
               },
-            ),*/
+            ),
           ],
         );
       },
