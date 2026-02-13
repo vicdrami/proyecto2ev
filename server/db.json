@@ -1,20 +1,20 @@
 {
-    "eventos": [
-        {
-            "id": "1",
-            "title": "Evento 1",
-            "image": "https://picsum.photos/200/300",
-            "date": "2025-02-10",
-            "description": "Descripción del primer evento",
-            "price": 20.0
-        },
-        {
-            "id": "2",
-            "title": "Evento 2",
-            "image": "https://picsum.photos/200/300",
-            "date": "2025-05-20",
-            "description": "Descripción del segundo evento",
-            "price": 40.0
-        }
-    ]
+  "eventos": [
+    {
+      "id": "1",
+      "title": "Evento 1",
+      "image": "https://picsum.photos/200/300",
+      "date": "2025-02-10",
+      "description": "Descripción del primer evento",
+      "price": 20
+    },
+    {
+      "id": "2",
+      "title": "Evento 2",
+      "image": "https://picsum.photos/200/300",
+      "date": "2026-06-17T00:00:00.000",
+      "description": "Descripción del segundo evento",
+      "price": 40
+    }
+  ]
 }
